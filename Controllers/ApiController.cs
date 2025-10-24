@@ -8,14 +8,17 @@ record ErrorResponse(string message);
 [Route("api")]
 public class ApiControlller : ControllerBase
 {
+    private readonly MessageQueueService _mqService;
     private readonly ILogger<ApiControlller> _logger;
     private readonly ChatService _chatService;
 
 
-    public ApiControlller(ILogger<ApiControlller> logger, ChatService chatService)
+    public ApiControlller(ILogger<ApiControlller> logger, ChatService chatService, MessageQueueService mqService)
     {
         _logger = logger;
         _chatService = chatService;
+        _mqService = mqService;
+
     }
     private static async Task Echo(WebSocket webSocket)
     {
@@ -44,15 +47,14 @@ public class ApiControlller : ControllerBase
     }
 
 
-    
+
     public async Task Get()
     {
         if (HttpContext.WebSockets.IsWebSocketRequest)
         {
             _logger.LogInformation("recieved websocket request");
             using var ws = await HttpContext.WebSockets.AcceptWebSocketAsync();
-            _chatService.SetWebSocket(ws);
-            await _chatService.Chat();
+            await _chatService.HandleWebSocketConn(ws);
 
         }
         else
